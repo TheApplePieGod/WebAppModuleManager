@@ -29,8 +29,8 @@ async function createWindow () {
 		//await session.defaultSession.loadExtension(reactDevToolsPath);
 	}
 	mainWindow = new BrowserWindow({
-		width: 1920,
-		height: 1080,
+		width: 900,
+		height: 900,
 		icon: path.resolve(__dirname, './favicon.ico'),
 		webPreferences: {
 			//sandbox: true,
@@ -41,7 +41,7 @@ async function createWindow () {
 	});
 
 	// Open the DevTools.
-	mainWindow.webContents.openDevTools()
+	//mainWindow.webContents.openDevTools()
 
 	// Emitted when the window is closed.
 	mainWindow.on('closed', function(e) {
@@ -92,9 +92,10 @@ app.on('activate', function () {
 // begin app code
 // -----------------------------------------------------
 
-ipcMain.handle('openFolderDialog', async (event) => {
+ipcMain.handle('openFolderDialog', async (event, path) => {
 	const result = await dialog.showOpenDialog(mainWindow, {
-		properties: ["openDirectory"]
+		properties: ["openDirectory"],
+		defaultPath: path
 	});
 	return result.filePaths;
 });
@@ -136,14 +137,32 @@ ipcMain.handle('loadInfoFile', async (event, path) => {
 	return loadInfoFile(path);
 });
 
+const getValidVersions = (modulePath) => {
+	const moduleFiles = fs.readdirSync(modulePath);
+	let validVersions = [];
+	moduleFiles.forEach((file) => {
+		const newPath = `${modulePath}/${file}`;
+		if (fs.statSync(newPath).isDirectory()) {
+			const version = parseInt(file);
+			if (!isNaN(version))
+				validVersions.push(version);
+		}
+	});
+	validVersions.sort();
+	return validVersions;
+}
+
 const searchForModules = (path, moduleList) => {
 	const files = fs.readdirSync(path);
 	
 	if (files.includes("waminfo.json")) { // is a module
 		const fileData = fs.readFileSync(`${path}/waminfo.json`);
 		const moduleInfo = JSON.parse(fileData);
-		moduleInfo["path"] = path;
-		moduleList.push(moduleInfo);
+		const validVersions = getValidVersions(path);
+		if (validVersions.length > 0) {
+			moduleInfo["path"] = path;
+			moduleList.push({ module: moduleInfo, version: validVersions[validVersions.length - 1] });
+		}
 	} else {
 		files.forEach((file) => {
 			const newPath = `${path}/${file}`;
@@ -173,17 +192,7 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 		currentVersion = info.loadedModules[loadedModuleIndex].version;
 	}
 
-	const moduleFiles = fs.readdirSync(module.path);
-	let validVersions = [];
-	moduleFiles.forEach((file) => {
-		const newPath = `${module.path}/${file}`;
-		if (fs.statSync(newPath).isDirectory()) {
-			const version = parseInt(file);
-			if (!isNaN(version))
-				validVersions.push(version);
-		}
-	});
-	validVersions.sort();
+	const validVersions = getValidVersions(module.path);
 
 	if (validVersions.length == 0) return "Module has no associated versions";
 
@@ -234,13 +243,45 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 			try {
 				const packageFileData = fs.readFileSync(`${projectPath}/package.json`);
 				let packageJSON = JSON.parse(packageFileData);
-				if (packageJSON.hasOwnProperty("dependencies") && !packageJSON.dependencies.hasOwnProperty(module.name))
+				if (packageJSON.hasOwnProperty("dependencies") && !packageJSON.dependencies.hasOwnProperty(module.name)) {
 					packageJSON.dependencies[module.name] = `file:WAMM/${module.uuid}`;
-				fs.writeFileSync(`${projectPath}/package.json`, beautify(JSON.stringify(packageJSON), { format: "json" }));
+					fs.writeFileSync(`${projectPath}/package.json`, beautify(JSON.stringify(packageJSON), { format: "json" }));
+				}
 			} catch {}
 		}
 	}
 	return "Done";
 });
 
-// run when a version of this module has already been installed
+ipcMain.handle('removeModule', async (event, projectPath, module) => {
+	let info = loadInfoFile(projectPath);
+	const loadedModuleIndex = info.loadedModules.findIndex(m => m.module.uuid == module.uuid);
+
+	if (loadedModuleIndex == -1) return;
+
+	// delete files
+	fs.rmdirSync(`${projectPath}/WAMM/${module.uuid}`, { recursive: true, force: true });
+
+	// delete associated migrations
+	const migrations = fs.readdirSync(`${projectPath}/WAMM/Migrations`);
+	migrations.forEach((file) => {
+		if (file.includes(module.uuid))
+			fs.rmSync(`${projectPath}/WAMM/Migrations/${file}`);
+	});
+
+	// update info file
+	info.loadedModules.splice(loadedModuleIndex, 1);
+	fs.writeFileSync(`${projectPath}/wamm.json`, JSON.stringify(info));
+
+	// update package.json file
+	try {
+		const packageFileData = fs.readFileSync(`${projectPath}/package.json`);
+		let packageJSON = JSON.parse(packageFileData);
+		if (packageJSON.dependencies.hasOwnProperty(module.name)) {
+			delete packageJSON.dependencies[module.name];
+			fs.writeFileSync(`${projectPath}/package.json`, beautify(JSON.stringify(packageJSON), { format: "json" }));
+		}
+	} catch {}
+
+	return "Done";
+});

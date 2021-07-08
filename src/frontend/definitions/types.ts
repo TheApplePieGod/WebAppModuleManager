@@ -22,11 +22,11 @@ export interface Module {
     path: string;
 }
 
-export interface LoadedModule {
+export interface VersionedModule {
     module: Module;
     version: number;
 }
 
 export interface ProjectInfo {
-    loadedModules: LoadedModule[];
+    loadedModules: VersionedModule[];
 }

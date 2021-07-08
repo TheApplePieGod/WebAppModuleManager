@@ -13,15 +13,19 @@ declare var window: types.Window;
 
 export const Main = () => {
     const [selectedProject, setSelectedProject] = React.useState("");
+    const [refreshTree, setRefreshTree] = React.useState(false);
 
     return (
         <div style={{ display: 'flex', gap: "5rem" }}>
             <FolderTree
                 buttonText="Select Project"
                 onFolderSelected={setSelectedProject}
+                shouldRefresh={refreshTree}
+                resetRefresh={() => setRefreshTree(false)}
             />
             <ModuleList
                 projectPath={selectedProject}
+                refreshTree={() => setRefreshTree(true)}
             />
         </div>
     );
