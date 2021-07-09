@@ -5,7 +5,8 @@
         "EntityFramework Core",
         "[dbo].[User]: Id (INT), Deleted (BIT), Active (BIT)",
         "Add 'public DbSet<GetAlertsResult> AlertsQueryModel { get; set; }' to your DatabaseContext",
-        "Add\n'protected override void OnModelCreating(ModelBuilder modelBuilder)\n{\nbase.OnModelCreating(modelBuilder);\nmodelBuilder.Entity<GetAlertsResult>().HasNoKey();\n}'\nto your DatabaseContext"
+        "Add 'protected override void OnModelCreating(ModelBuilder modelBuilder) {base.OnModelCreating(modelBuilder); modelBuilder.Entity<GetAlertsResult>().HasNoKey(); }' to your DatabaseContext",
+        "Add 'public virtual DbSet<Alert> Alerts { get; set; }' to your DatabaseContext"
     ],
     "uuid": "a84f1400-7239-4cc0-bd36-f4d8024c09a1",
     "textInjections": [

@@ -1,3 +1,8 @@
+IF NOT EXISTS ( SELECT  *
+                FROM    sys.schemas
+                WHERE   name = 'wamm_notifications' )
+    EXEC('CREATE SCHEMA [wamm_notifications]');
+GO
 SET ANSI_NULLS ON
 GO
 

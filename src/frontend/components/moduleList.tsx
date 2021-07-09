@@ -73,9 +73,11 @@ export const ModuleList = (props: Props) => {
 
     React.useEffect(loadInfoFile, [props.projectPath]);
     React.useEffect(() => {
-        loadAvailableModules("D:/Projects/WebAppModuleManager/modules");
         const savedModulePath = localStorage.getItem("saved_module_path");
-        if (savedModulePath) setModulesPath(savedModulePath);
+        if (savedModulePath) {
+            setModulesPath(savedModulePath);
+            loadAvailableModules(savedModulePath);
+        }
     }, []);
 
     const handleInjectionsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, i: number) => {
@@ -100,7 +102,7 @@ export const ModuleList = (props: Props) => {
 
     const refreshData = () => {
         loadInfoFile();
-        loadAvailableModules("D:/Projects/WebAppModuleManager/modules");
+        loadAvailableModules(modulesPath);
         props.refreshTree();
     }
 
@@ -129,6 +131,7 @@ export const ModuleList = (props: Props) => {
             if (data.length == 0) return;
             setModulesPath(data[0]);
             localStorage.setItem("saved_module_path", data[0]);
+            loadAvailableModules(data[0]);
         });
     }
 
@@ -190,9 +193,9 @@ export const ModuleList = (props: Props) => {
                             <Typography><b>Requirements</b></Typography>
                             {availableModules[modalState.moduleIndex].module.requirements.map((r, i) => {
                                 return (
-                                    <div key={i} style={{ display: "flex" }}>
+                                    <div key={i} style={{ display: "flex", alignItems: "center" }}>
                                         <ContainedCheckbox />
-                                        <p dangerouslySetInnerHTML={{__html: `${r.replaceAll("\n", "<br />")}`}} />
+                                        <Typography>- {r}</Typography>
                                     </div>
                                 );
                             })}
@@ -231,6 +234,15 @@ export const ModuleList = (props: Props) => {
                             <Typography color="textPrimary"><b>Description:</b> {info.loadedModules[loadedModalState.moduleIndex].module.description}</Typography>
                             <Typography color="textPrimary"><b>UUID:</b> {info.loadedModules[loadedModalState.moduleIndex].module.uuid}</Typography>
                             <Typography color="textPrimary"><b>Path:</b> {info.loadedModules[loadedModalState.moduleIndex].module.path}</Typography>
+                            <br />
+                            <Typography><b>Requirements</b></Typography>
+                            {info.loadedModules[loadedModalState.moduleIndex].module.requirements.map((r, i) => {
+                                return (
+                                    <div key={i}>
+                                        <Typography>- {r}</Typography>
+                                    </div>
+                                );
+                            })}
                         </div>
                         <Button variant="contained" style={{ backgroundColor: "#9b3032" }} onClick={() => setConfirmModalOpen(true)}>Remove</Button>
                         <Button variant="contained" onClick={closeLoadedModal}>Close</Button>
