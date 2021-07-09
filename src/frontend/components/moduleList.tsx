@@ -1,4 +1,4 @@
-import { Checkbox, DialogTitle } from '@material-ui/core';
+import { Checkbox, DialogTitle, FormControl, InputLabel } from '@material-ui/core';
 import { Button, Paper, TextField, Typography, Select, MenuItem, Modal, Dialog } from '@material-ui/core';
 import React from 'react';
 import * as api from '../definitions/api';
@@ -135,9 +135,15 @@ export const ModuleList = (props: Props) => {
         });
     }
 
+    const updateDbType = (type: string) => {
+        if (!info) return;
+
+        api.updateDbType(props.projectPath, type).then(() => setInfo({ ...info, dbType: type }));
+    }
+
     return (
         <div>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "1rem", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem", gap: "0.5rem" }}>
                 <TextField
                     fullWidth
                     label="Modules folder location"
@@ -147,6 +153,21 @@ export const ModuleList = (props: Props) => {
                 />
                 <Button variant="outlined" onClick={updateModulePath}>Change</Button>
             </div>
+            {(info && props.projectPath != "") &&
+                <FormControl fullWidth variant="outlined">
+                    <InputLabel id="db-select-label">Loaded project database type</InputLabel>
+                    <Select
+                        style={{ marginBottom: "1rem" }}
+                        labelId="db-select-label"
+                        label="Loaded project database type"
+                        value={info.dbType}
+                        onChange={(e) => updateDbType(e.target.value as string)}
+                    >
+                        <MenuItem value={"sqlserver"}>SQLServer</MenuItem>
+                        <MenuItem value={"mysql"}>MySQL</MenuItem>
+                    </Select>
+                </FormControl>
+            }
             {props.projectPath != "" && <Button variant="contained" fullWidth onClick={refreshData} style={{ marginBottom: "1rem" }}>Refresh</Button>}
             {info &&
                 <div style={{ display: "flex", gap: "1rem" }}>
@@ -190,6 +211,7 @@ export const ModuleList = (props: Props) => {
                         <div style={{ padding: "1rem" }}>
                             <Typography><b>Version:</b> {availableModules[modalState.moduleIndex].version}</Typography>
                             <Typography><b>Description:</b> {availableModules[modalState.moduleIndex].module.description}</Typography>
+                            <Typography><b>SQL Support:</b> {availableModules[modalState.moduleIndex].module.sqlSupport.join(", ")}</Typography>
                             <Typography><b>Requirements</b></Typography>
                             {availableModules[modalState.moduleIndex].module.requirements.map((r, i) => {
                                 return (
@@ -232,6 +254,7 @@ export const ModuleList = (props: Props) => {
                             <Typography color="textPrimary"><b>Name:</b> {info.loadedModules[loadedModalState.moduleIndex].module.name}</Typography>
                             <Typography color="textPrimary"><b>Version:</b> {info.loadedModules[loadedModalState.moduleIndex].version}</Typography>
                             <Typography color="textPrimary"><b>Description:</b> {info.loadedModules[loadedModalState.moduleIndex].module.description}</Typography>
+                            <Typography color="textPrimary"><b>SQL Support:</b> {info.loadedModules[loadedModalState.moduleIndex].module.sqlSupport.join(", ")}</Typography>
                             <Typography color="textPrimary"><b>UUID:</b> {info.loadedModules[loadedModalState.moduleIndex].module.uuid}</Typography>
                             <Typography color="textPrimary"><b>Path:</b> {info.loadedModules[loadedModalState.moduleIndex].module.path}</Typography>
                             <br />

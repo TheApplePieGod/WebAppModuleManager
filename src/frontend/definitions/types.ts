@@ -17,6 +17,7 @@ export interface Module {
     name: string;
     description: string;
     requirements: string[];
+    sqlSupport: string[];
     uuid: string;
     textInjections: TextInjection[];
     path: string;
@@ -29,4 +30,5 @@ export interface VersionedModule {
 
 export interface ProjectInfo {
     loadedModules: VersionedModule[];
+    dbType: string;
 }

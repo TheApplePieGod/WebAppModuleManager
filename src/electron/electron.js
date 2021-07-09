@@ -128,7 +128,8 @@ const loadInfoFile = (path) => {
 		return JSON.parse(fileData);
 	} catch {
 		return {
-			loadedModules: []
+			loadedModules: [],
+			dbType: "sqlserver"
 		};
 	}
 }
@@ -203,9 +204,18 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 		const versionFiles = fs.readdirSync(`${module.path}/${validVersions[i]}`);
 
 		// check for db upgrades
-		// todo: switch between mysql and sqlserver migrations
-		if (versionFiles.includes("upgrade-sqlserver.sql")) {
-			fs.copyFileSync(`${module.path}/${validVersions[i]}/upgrade-sqlserver.sql`, `${projectPath}/WAMM/Migrations/${module.uuid}_${validVersions[i]}.sql`);
+		switch (info.dbType) {
+			default:
+			case "sqlserver": {
+				if (versionFiles.includes("upgrade-sqlserver.sql")) {
+					fs.copyFileSync(`${module.path}/${validVersions[i]}/upgrade-sqlserver.sql`, `${projectPath}/WAMM/Migrations/${module.uuid}_${validVersions[i]}.sql`);
+				}
+			} break;
+			case "mysql": {
+				if (versionFiles.includes("upgrade-mysql.sql")) {
+					fs.copyFileSync(`${module.path}/${validVersions[i]}/upgrade-mysql.sql`, `${projectPath}/WAMM/Migrations/${module.uuid}_${validVersions[i]}.sql`);
+				}
+			}
 		}
 
 		if (i == validVersions.length - 1) { // most recent version
@@ -239,15 +249,17 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 				});
 			});
 
-			// update package.json file
-			try {
-				const packageFileData = fs.readFileSync(`${projectPath}/package.json`);
-				let packageJSON = JSON.parse(packageFileData);
-				if (packageJSON.hasOwnProperty("dependencies") && !packageJSON.dependencies.hasOwnProperty(module.name)) {
-					packageJSON.dependencies[module.name] = `file:WAMM/${module.uuid}`;
-					fs.writeFileSync(`${projectPath}/package.json`, beautify(JSON.stringify(packageJSON), { format: "json" }));
-				}
-			} catch {}
+			// update package.json file if the module contains a package.json
+			if (versionFiles.includes("package.json")) {
+				try {
+					const packageFileData = fs.readFileSync(`${projectPath}/package.json`);
+					let packageJSON = JSON.parse(packageFileData);
+					if (packageJSON.hasOwnProperty("dependencies") && !packageJSON.dependencies.hasOwnProperty(module.name)) {
+						packageJSON.dependencies[module.name] = `file:WAMM/${module.uuid}`;
+						fs.writeFileSync(`${projectPath}/package.json`, beautify(JSON.stringify(packageJSON), { format: "json" }));
+					}
+				} catch {}
+			}
 		}
 	}
 	return "Done";
@@ -284,4 +296,10 @@ ipcMain.handle('removeModule', async (event, projectPath, module) => {
 	} catch {}
 
 	return "Done";
+});
+
+ipcMain.handle('updateDbType', async (event, projectPath, dbType) => {
+	let info = loadInfoFile(projectPath);
+	info.dbType = dbType;
+	fs.writeFileSync(`${projectPath}/wamm.json`, JSON.stringify(info));
 });

@@ -30,3 +30,7 @@ export const removeModule = async (projectPath: string, module: types.Module) =>
     const result: string = await ipcRenderer.invoke('removeModule', projectPath, module);
     return result;
 }
+
+export const updateDbType = async (projectPath: string, dbType: string) => {
+    await ipcRenderer.invoke('updateDbType', projectPath, dbType);
+}

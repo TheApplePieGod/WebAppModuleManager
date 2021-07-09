@@ -8,6 +8,9 @@
         "Add 'protected override void OnModelCreating(ModelBuilder modelBuilder) {base.OnModelCreating(modelBuilder); modelBuilder.Entity<GetAlertsResult>().HasNoKey(); }' to your DatabaseContext",
         "Add 'public virtual DbSet<Alert> Alerts { get; set; }' to your DatabaseContext"
     ],
+    "sqlSupport": [
+        "sqlserver"
+    ],
     "uuid": "a84f1400-7239-4cc0-bd36-f4d8024c09a1",
     "textInjections": [
         {
