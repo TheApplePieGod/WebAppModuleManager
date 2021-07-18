@@ -1,4 +1,4 @@
-# WAMM Module Standard V1.0
+# WAMM Module Specification V1.0
 
 ## Folder Structure
 - module-name
