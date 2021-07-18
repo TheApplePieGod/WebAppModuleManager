@@ -110,9 +110,12 @@ export const ModuleList = (props: Props) => {
         if (!info) return [];
         let available: JSX.Element[] = [];
         availableModules.map((e, i) => {
-            if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid) == -1)
-                available.push(<Button key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>)
+            if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid) == -1) {
+                available.push(<Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
+                available.push(<br />);
+            }
         });
+        available.pop();
         return available;
     }
 
@@ -120,9 +123,12 @@ export const ModuleList = (props: Props) => {
         if (!info) return [];
         let available: JSX.Element[] = [];
         availableModules.map((e, i) => {
-            if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid && m.version < e.version) != -1)
-                available.push(<Button key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>)
+            if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid && m.version < e.version) != -1) {
+                available.push(<Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
+                available.push(<br />);
+            }
         });
+        available.pop();
         return available;
     }
 
@@ -177,7 +183,10 @@ export const ModuleList = (props: Props) => {
                         {info.loadedModules.length > 0 ?
                             info.loadedModules.map((e, i) => {
                                 return (
-                                    <Button key={i}onClick={() => setLoadedModalState({ open: true, moduleIndex: i })} variant="contained">{e.module.name}</Button>
+                                    <React.Fragment>
+                                        <Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => setLoadedModalState({ open: true, moduleIndex: i })} variant="contained">{e.module.name}</Button>
+                                        {i != info.loadedModules.length - 1 && <br />}
+                                    </React.Fragment>
                                 );
                             })
                             : <Typography color="textPrimary">None</Typography>
@@ -222,7 +231,7 @@ export const ModuleList = (props: Props) => {
                                 );
                             })}
                             <br />
-                            <Typography><b>Additional Setup</b></Typography>
+                            {availableModules[modalState.moduleIndex].module.textInjections.length > 0 && <Typography><b>Additional Setup</b></Typography>}
                             {availableModules[modalState.moduleIndex].module.textInjections.map((e, i) => {
                                 return (
                                     <div key={i}>

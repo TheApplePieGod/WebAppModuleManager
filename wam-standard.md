@@ -48,7 +48,7 @@
 - **description**: the description of the module
 - **requirements**: any additional dependencies required by the module which will be displayed to the user upon installation
 - **sqlSupport**: the versions of sql this module supports. can currently include "sqlserver", "mysql", or nothing if no db is required
-- **uuid**: the unique identifier for this module
+- **uuid**: the unique identifier for this module ([generator](https://www.uuidgenerator.net/))
 - **textInjections**: users will be prompted to fill out the requested information upon installation, which will be injected into specified files in the form of text replacement
     - **replacementString**: the string pattern to find and replace with the user input (ex the string "replacement" will be turned into "~{replacement}~", and that is what will be searched for in the file)
     - **requestText**: the client-facing description of this information request

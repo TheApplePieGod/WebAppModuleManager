@@ -29,7 +29,7 @@ async function createWindow () {
 		//await session.defaultSession.loadExtension(reactDevToolsPath);
 	}
 	mainWindow = new BrowserWindow({
-		width: 900,
+		width: 1200,
 		height: 900,
 		icon: path.resolve(__dirname, './favicon.ico'),
 		webPreferences: {
@@ -106,7 +106,7 @@ const enumerateDirectory = (path, fileList) => {
 	files.forEach((file) => {
 		const newPath = `${path}/${file}`;
 		if (fs.statSync(newPath).isDirectory()) {
-			if (file != "node_modules") {
+			if (file != "node_modules" && !file.endsWith(".asar")) {
 				fileList.push({ name: file, children: [] });
 				enumerateDirectory(newPath, fileList[fileList.length - 1].children);
 			}
@@ -243,9 +243,13 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 			// text injections (todo: optimize this)
 			module.textInjections.forEach((t, i) => {
 				t.files.forEach((f) => {
-					let fileData = fs.readFileSync(`${projectPath}/WAMM/${module.uuid}/${f}`).toString();
-					fileData = fileData.replaceAll(`~{${t.replacementString}}~`, injections[i]);
-					fs.writeFileSync(`${projectPath}/WAMM/${module.uuid}/${f}`, fileData);
+					try {
+						let fileData = fs.readFileSync(`${projectPath}/WAMM/${module.uuid}/${f}`).toString();
+						fileData = fileData.replaceAll(`~{${t.replacementString}}~`, injections[i]);
+						fs.writeFileSync(`${projectPath}/WAMM/${module.uuid}/${f}`, fileData);
+					} catch { // likely file not found
+						console.warn(`Attempted to perform text replacement in file ${f}, but it likely does not exist`);
+					}
 				});
 			});
 
