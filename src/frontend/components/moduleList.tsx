@@ -4,6 +4,7 @@ import React from 'react';
 import * as api from '../definitions/api';
 import * as types from '../definitions/types';
 import * as theme from '../theme';
+import { PostInstallDialog } from './postInstallDialog';
 
 interface Props {
     projectPath: string;
@@ -27,7 +28,9 @@ export const ModuleList = (props: Props) => {
         open: false,
         moduleIndex: 0,
     });
+    const [processing, setProcessing] = React.useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = React.useState(false);
+    const [postInstallDialogOpen, setPostInstallDialogOpen] = React.useState(false);
     const [modulesPath, setModulesPath] = React.useState("");
 
     const loadInfoFile = () => {
@@ -52,22 +55,37 @@ export const ModuleList = (props: Props) => {
         });
     }
 
+    const closeModal = () => {
+        setModalState({...modalState, open: false});
+        setInjections([]);
+    }
+
+    const confirmModal = () => {
+        applyModule(modalState.moduleIndex);
+    }
+
     const applyModule = (index: number) => {
         if (props.projectPath == "") return;
+        setProcessing(true);
         api.applyModule(props.projectPath, availableModules[index].module, injections).then(result => {
             setInjections([]);
             console.log(result);
             refreshData();
+            setPostInstallDialogOpen(true);
+            setProcessing(false);
+            closeModal();
         });
     }
 
     const removeModule = () => {
         if (props.projectPath == "" || !info) return;
         closeLoadedModal();
-        setConfirmModalOpen(false);
+        setProcessing(true);
         api.removeModule(props.projectPath, info.loadedModules[loadedModalState.moduleIndex].module).then(result => {
             console.log(result);
             refreshData();
+            setProcessing(false);
+            setConfirmModalOpen(false);
         });
     }
 
@@ -86,16 +104,6 @@ export const ModuleList = (props: Props) => {
         setInjections(newArr);
     }
 
-    const closeModal = () => {
-        setModalState({...modalState, open: false});
-        setInjections([]);
-    }
-
-    const confirmModal = () => {
-        applyModule(modalState.moduleIndex);
-        closeModal();
-    }
-
     const closeLoadedModal = () => {
         setLoadedModalState({...loadedModalState, open: false });
     }
@@ -111,8 +119,8 @@ export const ModuleList = (props: Props) => {
         let available: JSX.Element[] = [];
         availableModules.map((e, i) => {
             if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid) == -1) {
-                available.push(<Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
-                available.push(<br />);
+                available.push(<Button style={{ marginBottom: "0.25rem" }} key={`abtn${i}`} onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
+                available.push(<br key={`abr${i}`} />);
             }
         });
         available.pop();
@@ -124,8 +132,8 @@ export const ModuleList = (props: Props) => {
         let available: JSX.Element[] = [];
         availableModules.map((e, i) => {
             if (info.loadedModules.findIndex(m => m.module.uuid == e.module.uuid && m.version < e.version) != -1) {
-                available.push(<Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
-                available.push(<br />);
+                available.push(<Button style={{ marginBottom: "0.25rem" }} key={`bbtn${i}`} onClick={() => tryApplyModule(i)} variant="contained">{e.module.name}</Button>);
+                available.push(<br key={`bbr${i}`} />);
             }
         });
         available.pop();
@@ -169,6 +177,7 @@ export const ModuleList = (props: Props) => {
                         value={info.dbType}
                         onChange={(e) => updateDbType(e.target.value as string)}
                     >
+                        <MenuItem value={"none"}>None</MenuItem>
                         <MenuItem value={"sqlserver"}>SQLServer</MenuItem>
                         <MenuItem value={"mysql"}>MySQL</MenuItem>
                     </Select>
@@ -183,8 +192,8 @@ export const ModuleList = (props: Props) => {
                         {info.loadedModules.length > 0 ?
                             info.loadedModules.map((e, i) => {
                                 return (
-                                    <React.Fragment>
-                                        <Button style={{ marginBottom: "0.25rem" }} key={i}onClick={() => setLoadedModalState({ open: true, moduleIndex: i })} variant="contained">{e.module.name}</Button>
+                                    <React.Fragment key={`cbtn${i}`}>
+                                        <Button style={{ marginBottom: "0.25rem" }} onClick={() => setLoadedModalState({ open: true, moduleIndex: i })} variant="contained">{e.module.name}</Button>
                                         {i != info.loadedModules.length - 1 && <br />}
                                     </React.Fragment>
                                 );
@@ -212,7 +221,7 @@ export const ModuleList = (props: Props) => {
             }
             <Dialog
                 open={modalState.open}
-                onClose={closeModal}
+                onClose={() => {if (!processing) closeModal();}}
             >
                 {modalState.open &&
                     <React.Fragment>
@@ -247,8 +256,8 @@ export const ModuleList = (props: Props) => {
                                 );
                             })}
                         </div>
-                        <Button variant="contained" style={{ backgroundColor: "#9b3032" }} onClick={closeModal}>Cancel</Button>
-                        <Button variant="contained" style={{ backgroundColor: "#1f9e2c" }} onClick={confirmModal}>Confirm</Button>
+                        <Button variant="contained" style={{ backgroundColor: "#9b3032" }} disabled={processing} onClick={closeModal}>Cancel</Button>
+                        <Button variant="contained" style={{ backgroundColor: "#1f9e2c" }} disabled={processing} onClick={confirmModal}>Confirm</Button>
                     </React.Fragment>
                 }
             </Dialog>
@@ -283,7 +292,7 @@ export const ModuleList = (props: Props) => {
             </Dialog>
             <Dialog
                 open={confirmModalOpen}
-                onClose={() => setConfirmModalOpen(false)}
+                onClose={() => { if (!processing) setConfirmModalOpen(false); }}
             >
                 {confirmModalOpen &&
                     <React.Fragment>
@@ -291,11 +300,16 @@ export const ModuleList = (props: Props) => {
                         <div style={{ padding: "1rem" }}>
                             <Typography color="textPrimary">{`This action cannot be undone. Make sure to remove any associated database tables & functions.`}</Typography>
                         </div>
-                        <Button variant="contained" style={{ backgroundColor: "#9b3032" }} onClick={removeModule}>Delete</Button>
-                        <Button variant="contained" onClick={() => setConfirmModalOpen(false)}>Close</Button>
+                        <Button variant="contained" disabled={processing} style={{ backgroundColor: "#9b3032" }} onClick={removeModule}>Delete</Button>
+                        <Button variant="contained" disabled={processing} onClick={() => setConfirmModalOpen(false)}>Close</Button>
                     </React.Fragment>
                 }
             </Dialog>
+            <PostInstallDialog
+                open={postInstallDialogOpen}
+                onClose={() => setPostInstallDialogOpen(false)}
+                projectPath={props.projectPath}
+            />
         </div>
     );
 }
