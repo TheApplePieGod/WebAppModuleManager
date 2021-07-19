@@ -5,6 +5,7 @@ import * as url from 'url';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as beautify from 'beautify';
+import { spawn, execSync } from 'child_process';
 
 const isPackaged = require('electron-is-packaged').isPackaged;
 
@@ -129,7 +130,7 @@ const loadInfoFile = (path) => {
 	} catch {
 		return {
 			loadedModules: [],
-			dbType: "sqlserver"
+			dbType: "none"
 		};
 	}
 }
@@ -182,6 +183,17 @@ ipcMain.handle('loadAvailableModules', async (event, rootPath) => {
 	return moduleList;
 });
 
+ipcMain.handle('runNpmInstall', async (event, projectPath) => {
+	let child = spawn("npm", ["i"], { cwd: projectPath, shell: true });
+	child.stdout.setEncoding('utf8');
+	child.stdout.on('data', (chunk) => {
+		event.sender.send('recieveCommandOutput', chunk);
+	});
+	child.on('close', (code) => {
+		event.sender.send('commandComplete', code);
+	});
+});
+
 ipcMain.handle('applyModule', async (event, projectPath, module, injections) => {
 	// intialize folder structure
 	fs.mkdirSync(`${projectPath}/WAMM/Migrations/`, { recursive: true });
@@ -205,7 +217,12 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 
 		// check for db upgrades
 		switch (info.dbType) {
-			default:
+			default: {
+				console.warn("An unsupported database type has been set, no db files will be copied.");
+			} break;
+			case "none": {
+				console.warn("No db type has been set, no db files will be copied. If that is intentional, ignore this warning.");
+			} break;
 			case "sqlserver": {
 				if (versionFiles.includes("upgrade-sqlserver.sql")) {
 					fs.copyFileSync(`${module.path}/${validVersions[i]}/upgrade-sqlserver.sql`, `${projectPath}/WAMM/Migrations/${module.uuid}_${validVersions[i]}.sql`);
@@ -215,7 +232,7 @@ ipcMain.handle('applyModule', async (event, projectPath, module, injections) => 
 				if (versionFiles.includes("upgrade-mysql.sql")) {
 					fs.copyFileSync(`${module.path}/${validVersions[i]}/upgrade-mysql.sql`, `${projectPath}/WAMM/Migrations/${module.uuid}_${validVersions[i]}.sql`);
 				}
-			}
+			} break;
 		}
 
 		if (i == validVersions.length - 1) { // most recent version
