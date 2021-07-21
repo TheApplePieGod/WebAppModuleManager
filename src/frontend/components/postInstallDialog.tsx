@@ -51,9 +51,13 @@ export const PostInstallDialog = (props: Props) => {
     }
 
     const onClose = () => {
+        if (running && !complete) return;
+
         props.onClose();
         setRunning(false);
         setComplete(false);
+        setOutputText("");
+        recievedData = [];
     }
 
     return (
@@ -77,7 +81,7 @@ export const PostInstallDialog = (props: Props) => {
                         </div>
                         : <Button variant="contained" style={{ backgroundColor: "#1f9e2c" }} onClick={runInstall}>Run</Button>
                     }
-                    <Button variant="contained" onClick={onClose}>Close</Button>
+                    <Button variant="contained" disabled={running && !complete} onClick={onClose}>Close</Button>
                 </React.Fragment>
             }
         </Dialog>
