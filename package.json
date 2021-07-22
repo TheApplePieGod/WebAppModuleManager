@@ -15,7 +15,10 @@
     "asar": true,
     "directories": {
       "output": "build"
-    }
+    },
+    "files": [
+      "!node_modules/**"
+    ]
   },
   "keywords": [],
   "author": "",
